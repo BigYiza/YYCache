@@ -121,30 +121,16 @@ static UIApplication *_YYSharedApplication() {
     if (!_db) return YES;
     
     int  result = 0;
-    BOOL retry = NO;
-    BOOL stmtFinalized = NO;
-    
+
     if (_dbStmtCache) CFRelease(_dbStmtCache);
     _dbStmtCache = NULL;
-    
-    do {
-        retry = NO;
-        result = sqlite3_close(_db);
-        if (result == SQLITE_BUSY || result == SQLITE_LOCKED) {
-            if (!stmtFinalized) {
-                stmtFinalized = YES;
-                sqlite3_stmt *stmt;
-                while ((stmt = sqlite3_next_stmt(_db, nil)) != 0) {
-                    sqlite3_finalize(stmt);
-                    retry = YES;
-                }
-            }
-        } else if (result != SQLITE_OK) {
-            if (_errorLogsEnabled) {
-                NSLog(@"%s line:%d sqlite close failed (%d).", __FUNCTION__, __LINE__, result);
-            }
+
+    result = sqlite3_close_v2(_db);
+    if (result != SQLITE_OK) {
+        if (_errorLogsEnabled) {
+            NSLog(@"%s line:%d sqlite close failed (%d).", __FUNCTION__, __LINE__, result);
         }
-    } while (retry);
+    }
     _db = NULL;
     return YES;
 }
